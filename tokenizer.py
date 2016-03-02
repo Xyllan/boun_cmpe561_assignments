@@ -40,7 +40,7 @@ class Tokenizer:
 
 		Returns a list of tokens.
 		"""
-		return [ (lambda tok: tok if tok.isupper() else tok.lower())(token) for token in re.split('[\s\.()\-"“!;,\'\?:]+', line.strip()) if not len(token) == 0 ]
+		return [ (lambda tok: tok if tok.isupper() else tok.lower())(token) for token in re.split('[\s\.()\-"“!\*;,\'\?:]+', line.strip()) if not len(token) == 0 ]
 
 	def next_token(self):
 		"""
@@ -55,6 +55,13 @@ class Tokenizer:
 			return token
 		else: # Should only happen at EOF
 			return ''
+
+	def counts(self):
+		"""
+		Returns the dictionary of word - count pairs. Is empty if count variable is 
+		left as False in the initializer.
+		"""
+		return self.tokens
 
 if __name__ == '__main__':
 	"""
