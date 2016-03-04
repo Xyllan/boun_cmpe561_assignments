@@ -2,6 +2,13 @@
 import re
 import sys
 
+def is_number(s):
+		try:
+			float(s)
+			return True
+		except ValueError:
+			return False
+
 class Tokenizer:
 	def __init__(self, path, count = False):
 		"""
@@ -40,7 +47,7 @@ class Tokenizer:
 
 		Returns a list of tokens.
 		"""
-		return [ (lambda tok: tok if tok.isupper() else tok.lower())(token) for token in re.split('[\s\.()\-"“!\*;,\'\?:]+', line.strip()) if not len(token) == 0 ]
+		return [ (lambda tok: tok if tok.isupper() else tok.lower())(token) for token in re.split('[\s\.()\-"“!\*;,\'\?:]+', line.strip()) if not(len(token) == 0)] #or is_number(token)) ]
 
 	def next_token(self):
 		"""

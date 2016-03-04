@@ -55,7 +55,7 @@ class MultinomialNaiveBayes:
 		"""
 		prob = math.log(self.class_data[class_name]['num_documents']  / self.total_documents)
 		for word in words:
-			prob += bayes.get_word_log_probability(class_name, word, alpha = alpha)
+			prob += self.get_word_log_probability(class_name, word, alpha = alpha)
 		return prob
 
 	def get_word_log_probability(self, class_name, word, alpha = 1):

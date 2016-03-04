@@ -6,51 +6,70 @@ import sys
 import shutil
 
 class Preprocessor:
-	def __init__(self, seed, path, ratio = 0.6, auto_organize = False):
+	def __init__(self):
 		"""
-		Initializes the object. Seed is the seed value given to the psuedo-random number generator
-		so that the same training set can be generated if needed. Path is the
-		outermost directory that houses the author directories. Ratio defines the ratio of training
-		dataset to the whole dataset. If auto_organize is set to True, the initializer will
-		automatically generate the data without the need to call organize() method externally
+		Initializes the object.
 		"""
-		random.seed(seed)
-		self.path = os.path.split(path)[0]
-		self.ratio = ratio
+		self.training_path = ''
+		self.test_path = ''
 		self.authors = {}
-		if auto_organize:
-			self.organize()
 
-	def init_dirs(self):
-		"""
-		Initializes the training and test directories from scratch.
-		"""
-		shutil.rmtree(self.path+'__training', ignore_errors=True)
-		shutil.rmtree(self.path+'__test', ignore_errors=True)
-		os.makedirs(self.path+'__training', exist_ok=True)
-		os.makedirs(self.path+'__test', exist_ok=True)
-
-	def organize(self):
+	def organize_dataset(self, seed, path, ratio = 0.6):
 		"""
 		Generates training and test datasets for each author and copies the related
 		files to the new directories. The texts belonging to authors are shuffled
 		with Fisher-Yates shuffle in order to make the test set selection random.
+
+		Seed is the seed value given to the psuedo-random number generator
+		so that the same training set can be generated if needed. Path is the
+		outermost directory that houses the author directories. Ratio defines the ratio of training
+		dataset to the whole dataset.
+
+		Returns the training and test paths.
 		"""
-		self.init_dirs()
-		authors = os.listdir(self.path)
+		if seed is not None:
+			random.seed(seed)
+		path = os.path.normpath(path)
+		self.training_path = path + '__training'
+		self.test_path = path + '__test'
+		self.init_dirs(self.training_path, self.test_path)
+		authors = os.listdir(path)
 		for author in authors:
-			self.authors[author] = { 'training':[], 'test':[] }
-			texts = os.listdir(os.path.join(self.path, author))
-			os.makedirs(os.path.join(self.path+'__training', author), exist_ok=True)
-			os.makedirs(os.path.join(self.path+'__test', author), exist_ok=True)
+			texts = os.listdir(os.path.join(path, author))
+			os.makedirs(os.path.join(self.training_path, author), exist_ok=True)
+			os.makedirs(os.path.join(self.test_path, author), exist_ok=True)
 			random.shuffle(texts)
-			trainSize = math.floor(self.ratio*len(texts))
-			for text in texts[0:trainSize]:
-				self.authors[author]['training'].append(text)
-				shutil.copyfile(os.path.join(self.path, author, text), os.path.join(self.path+'__training', author, text))
-			for text in texts[trainSize:]:
-				self.authors[author]['test'].append(text)
-				shutil.copyfile(os.path.join(self.path, author, text), os.path.join(self.path+'__test', author, text))
+			train_size = math.floor(ratio*len(texts))
+			for text in texts[0:train_size]:
+				shutil.copyfile(os.path.join(path, author, text), os.path.join(self.training_path, author, text))
+			for text in texts[train_size:]:
+				shutil.copyfile(os.path.join(path, author, text), os.path.join(self.test_path, author, text))
+		return self.training_path, self.test_path
+
+	def init_dirs(self, training_path, test_path):
+		"""
+		Initializes the training and test directories from scratch.
+		"""
+		shutil.rmtree(training_path, ignore_errors=True)
+		shutil.rmtree(test_path, ignore_errors=True)
+		os.makedirs(training_path, exist_ok=True)
+		os.makedirs(test_path, exist_ok=True)
+
+	def organize_authors(self, training_path = None, test_path = None):
+		"""
+		Generates the internal representation of training and test sets for each author.
+		If training and test paths are set (ex: as a result of calling organize_dataset()),
+		their arguments are not necessary. Authors that do not have any training data
+		are automatically ignored.
+		"""
+		if training_path is not None and test_path is not None:
+			self.training_path = training_path
+			self.test_path = test_path
+		training_authors = os.listdir(self.training_path)
+		for author in training_authors:
+			self.authors[author] = { 'training':[], 'test':[] }
+			self.authors[author]['training'] = os.listdir(os.path.join(self.training_path, author))
+			self.authors[author]['test'] = os.listdir(os.path.join(self.test_path, author))
 
 	def get_authors(self):
 		"""
@@ -81,9 +100,9 @@ class Preprocessor:
 		Returns the path to the file with the given parameters. Does not do any checks.
 		"""
 		if training_data:
-			return os.path.join(self.path+'__training', author, file_name)
+			return os.path.join(self.training_path, author, file_name)
 		else:
-			return os.path.join(self.path+'__test', author, file_name)
+			return os.path.join(self.test_path, author, file_name)
 
 if __name__ == '__main__':
 	"""
@@ -93,9 +112,10 @@ if __name__ == '__main__':
 	if len(sys.argv) < 2:
 		print('Please enter the directory to load authors from.')
 	else:
-		seed = 1232
+		seed = None
 		if len(sys.argv) > 2:
 			seed = sys.argv[2]
 
-		p = Preprocessor(seed, sys.argv[1])
-		p.organize()
+		p = Preprocessor()
+		p.organize_dataset(seed, sys.argv[1])
+		p.organize_authors()
