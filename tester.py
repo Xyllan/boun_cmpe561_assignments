@@ -7,14 +7,11 @@ import getopt
 import sys
 
 def f_score(precision, recall, beta = 1):
-	"""
-	Returns the f-score (harmonic mean) of the given parameters.
-	"""
+	""" Returns the f-score (harmonic mean) of the given parameters. """
 	return ((beta ** 2 + 1) * precision * recall) / ((beta ** 2) * precision + recall)
 
 def div0(a, b):
-	"""
-	Elementwise divide two numpy arrays, with divide by zero equaling 0.
+	""" Elementwise divide two numpy arrays, with divide by zero equaling 0.
 	div0( [-1, 0, 1], 0 ) would therefore return [0, 0, 0]
 	This is done avoid high precision values for the case where 
 	a class is not marked with neither false nor true positive.
@@ -65,20 +62,15 @@ class Tester:
 		self.stats[self.classes[real_class],self.classes[predicted_class]] += 1
 
 	def microavg_precision(self):
-		"""
-		Returns the micro-averaged precision value.
-		"""
+		""" Returns the micro-averaged precision value. """
 		return np.trace(self.stats) / np.sum(self.stats)
 
 	def microavg_recall(self):
-		"""
-		Returns the micro-averaged recall value.
-		"""
+		""" Returns the micro-averaged recall value. """
 		return np.trace(self.stats) / np.sum(self.stats)
 
 	def macroavg_precision(self):
-		"""
-		Returns the macro-averaged precision value.
+		""" Returns the macro-averaged precision value.
 		Note that for any class precision that evaluates to 0 / 0, we substitute in 0,
 		for that means a complete lack of true and false positives,
 		which should be discouraged.
@@ -86,9 +78,7 @@ class Tester:
 		return np.nanmean(div0(np.diagonal(self.stats), np.sum(self.stats, axis=0)))
 
 	def macroavg_recall(self):
-		"""
-		Returns the macro-averaged recall value.
-		"""
+		""" Returns the macro-averaged recall value. """
 		return np.nanmean(np.divide(np.diagonal(self.stats), np.sum(self.stats, axis=1)))
 
 	def print_scores(self):
@@ -108,8 +98,7 @@ class Tester:
 		print('F-score (beta=1):', macro_f)
 
 if __name__ == '__main__':
-	"""
-	This program normally accepts two arguments: the directory of the training set and
+	""" This program normally accepts two arguments: the directory of the training set and
 	the directory of the test set. If used, the -p option will make the program do the 
 	training/test set preprocessing with the given outer directory. If -p is used,
 	the -s option followed by a number can also be used to set the random seed

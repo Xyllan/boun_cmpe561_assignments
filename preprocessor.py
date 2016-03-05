@@ -7,18 +7,15 @@ import shutil
 
 class Preprocessor:
 	def __init__(self):
-		"""
-		Initializes the object.
-		"""
 		self.training_path = ''
 		self.test_path = ''
 		self.authors = {}
 
 	def organize_dataset(self, seed, path, ratio = 0.6):
-		"""
-		Generates training and test datasets for each author and copies the related
-		files to the new directories. The texts belonging to authors are shuffled
-		with Fisher-Yates shuffle in order to make the test set selection random.
+		""" Generates training and test datasets for each author.
+		The training and test datasets are copied to the new directories.
+		The texts belonging to authors are shuffled with Fisher-Yates shuffle
+		in order to make the test set selection random.
 
 		Seed is the seed value given to the psuedo-random number generator
 		so that the same training set can be generated if needed. Path is the
@@ -47,17 +44,14 @@ class Preprocessor:
 		return self.training_path, self.test_path
 
 	def init_dirs(self, training_path, test_path):
-		"""
-		Initializes the training and test directories from scratch.
-		"""
+		""" Initializes the training and test directories from scratch. """
 		shutil.rmtree(training_path, ignore_errors=True)
 		shutil.rmtree(test_path, ignore_errors=True)
 		os.makedirs(training_path, exist_ok=True)
 		os.makedirs(test_path, exist_ok=True)
 
 	def organize_authors(self, training_path = None, test_path = None):
-		"""
-		Generates the internal representation of training and test sets for each author.
+		""" Generates the internal representation of training and test sets for each author.
 		If training and test paths are set (ex: as a result of calling organize_dataset()),
 		their arguments are not necessary. Authors that do not have any training data
 		are automatically ignored.
@@ -72,41 +66,35 @@ class Preprocessor:
 			self.authors[author]['test'] = os.listdir(os.path.join(self.test_path, author))
 
 	def get_authors(self):
-		"""
-		Convenience method for getting the list of authors.
+		""" Convenience method for getting the list of authors.
 
 		Returns the list of authors.
 		"""
 		return self.authors.keys()
 
 	def training_data(self, author):
-		"""
-		Convenience method for getting the training set of a certain author.
+		""" Convenience method for getting the training set of a certain author.
 
 		Returns the list of file names selected as training data.
 		"""
 		return self.authors[author]['training']
 
 	def test_data(self, author):
-		"""
-		Convenience method for getting the test set of a certain author.
+		""" Convenience method for getting the test set of a certain author.
 
 		Returns the list of file names selected as tes data.
 		"""
 		return self.authors[author]['test']
 
 	def file_path(self, author, file_name, training_data = True):
-		"""
-		Returns the path to the file with the given parameters. Does not do any checks.
-		"""
+		""" Returns the path to the file with the given parameters. Does not do any checks. """
 		if training_data:
 			return os.path.join(self.training_path, author, file_name)
 		else:
 			return os.path.join(self.test_path, author, file_name)
 
 if __name__ == '__main__':
-	"""
-	Accepts two arguments, one mandatory (authors directory) and one optional
+	""" Accepts two arguments, one mandatory (authors directory) and one optional
 	(seed for random number generation)
 	"""
 	if len(sys.argv) < 2:

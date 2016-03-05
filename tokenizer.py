@@ -34,17 +34,14 @@ class Tokenizer:
 		self.line = []
 
 	def bag_of_words(self):
-		"""
-		Returns the bag of words representation of the file.
-		"""
+		""" Returns the bag of words representation of the file. """
 		lines = self.file.readlines()
 		self.file.close()
 		self.file = None
 		return [token for line in lines for token in self.tokenize(line)]
 
 	def has_next(self):
-		"""
-		Returns True if the token stream has any tokens left.
+		""" Returns True if the token stream has any tokens left.
 
 		Handles the acquiring of new tokens from the given token stream (file). 
 		"""
@@ -61,8 +58,7 @@ class Tokenizer:
 				return self.has_next()
 
 	def tokenize(self, line):
-		"""
-		Tokenizes the given line by splitting it from whitespaces and punctuations
+		""" Tokenizes the given line by splitting it from whitespaces and punctuations
 		that are commonly found at the end of sentences. Does not include
 		tokens of length 0. All tokens are transformed to lowercase unless the whole
 		token is uppercase.
@@ -75,9 +71,7 @@ class Tokenizer:
 		return [ (lambda tok: tok if tok.isupper() else tok.lower())(token) for token in m if not(len(token) == 0 or token in stopwords) ]
 
 	def next_token(self):
-		"""
-		Returns the next token.
-		"""
+		""" Returns the next token in the token stream. """
 		if len(self.line) > 0:
 			token = self.line.pop(0)
 			if token in self.tokens:
@@ -88,17 +82,8 @@ class Tokenizer:
 		else: # Should only happen at EOF
 			return ''
 
-	def counts(self):
-		"""
-		Returns the dictionary of word - count pairs. Is empty if count variable is 
-		left as False in the initializer.
-		"""
-		return self.tokens
-
 if __name__ == '__main__':
-	"""
-	Accepts one mandatory argument: text path
-	"""
+	""" Accepts one mandatory argument: text path """
 	if len(sys.argv) < 2:
 		print('Please enter the directory to load the text from.')
 	else:

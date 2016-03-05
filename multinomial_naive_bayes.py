@@ -11,24 +11,21 @@ class MultinomialNaiveBayes:
 		self.vocabulary = set([])
 
 	def add_class(self, class_name):
-		"""
-		Adds a class with the given class name.
+		""" Adds a class with the given class name.
 		This method should be called for each class in the training set.
 		"""
 		self.class_data[class_name] = { 'num_documents' : 0, 'total_word_count': 0, 'words' : {} }
 
 	def add_document(self, class_name, amount = 1):
-		"""
-		Adds a document with the given class.
-		This method should be called for each document in the training set.
+		""" Adds a document with the given class.
+		This method should be called until the total amount matches the number of documents
+		in the training set for each class.
 		"""
 		self.total_documents += amount
 		self.class_data[class_name]['num_documents'] += amount
 
 	def add_word(self, class_name, word):
-		"""
-		Convenience method for adding a single word to the given class bag
-		"""
+		""" Convenience method for adding a single word to the given class bag """
 		self.vocabulary.add(word)
 		self.class_data[class_name]['total_word_count'] += 1
 		if word in self.class_data[class_name]['words']:
@@ -37,8 +34,7 @@ class MultinomialNaiveBayes:
 			self.class_data[class_name]['words'][word] = 1
 
 	def most_probable_class(self, words, alpha = 1):
-		"""
-		Returns the class with the highest log probability, given a bag of words.
+		""" Returns the class with the highest log probability, given a bag of words.
 		Alpha is the Laplace smoothing parameter.
 		"""
 		best = -float("inf"), ''
@@ -49,8 +45,7 @@ class MultinomialNaiveBayes:
 		return best[1]
 
 	def get_class_log_probability(self, class_name, words = [], alpha = 1):
-		"""
-		Gets the log probability of a bag of words being in a certain class.
+		""" Gets the log probability of a bag of words being in a certain class.
 		Alpha is the Laplace smoothing parameter.
 		"""
 		prob = math.log(self.class_data[class_name]['num_documents']  / self.total_documents)
@@ -59,8 +54,7 @@ class MultinomialNaiveBayes:
 		return prob
 
 	def get_word_log_probability(self, class_name, word, alpha = 1):
-		"""
-		Gets the log probability of a word being in a certain class.
+		""" Gets the log probability of a word being in a certain class.
 		Uses Laplace smoothing with parameter alpha.
 		"""
 		word_count = 0
@@ -69,9 +63,7 @@ class MultinomialNaiveBayes:
 		return math.log((word_count + alpha) / (self.class_data[class_name]['total_word_count'] + alpha * len(self.vocabulary)))
 
 if __name__ == '__main__':
-	"""
-	Performs the basic example from the lecture notes.
-	"""
+	""" Performs the basic example from the lecture notes. """
 	bayes = MultinomialNaiveBayes()
 	bayes.add_class('china')
 	bayes.add_class('japan')
