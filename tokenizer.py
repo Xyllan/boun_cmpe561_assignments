@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 import re
 import sys
+import csv
+
+stopwords = []
+with open('stopwords-tr.csv', 'r') as f:
+	# Stop words are taken from http://www.turkceogretimi.com/Genel-Konular/article/541-turkce-etkisiz-kelimeler-stop-words-listesi-11/35
+	stopwords = [word for line in list(csv.reader(f)) for word in line]
+
+# Matches words by stripping all punctuation around it. Also strips the outer part of an apostrophe.
+token_re = re.compile(R"[!\"#$%&'()*+,\-./:;<=>?@[\]^_`{|}~]*([\w-]+)(?:'\w*)*[!\"#$%&'()*+,\-./:;<=>?@[\]^_`{|}~]*", re.U)
 
 def is_number(s):
 		try:
@@ -10,11 +19,13 @@ def is_number(s):
 			return False
 
 class Tokenizer:
-	def __init__(self, path, count = False):
-		"""
-		Initializes the tokenizer with the given text file path. If set,
-		count variable enables the built in frequency collection about
-		token counts.
+	""" Tokenizer for Turkish
+	There are two use cases:
+	1. Token stream through has_next() and next_token() methods.
+	2. List of all tokens through bag_of_words() method
+	"""
+	def __init__(self, path):
+		""" Initializes the tokenizer with the given text file path.
 		Note that the given files are assumed to be of Windows-1254 (Turkish)
 		encoding.
 		"""
@@ -22,17 +33,28 @@ class Tokenizer:
 		self.tokens = {}
 		self.line = []
 
+	def bag_of_words(self):
+		"""
+		Returns the bag of words representation of the file.
+		"""
+		lines = self.file.readlines()
+		self.file.close()
+		self.file = None
+		return [token for line in lines for token in self.tokenize(line)]
+
 	def has_next(self):
 		"""
-		Handles the acquiring of new tokens from the given token stream (file).
-		Returns True if the token stream has any tokens left. 
+		Returns True if the token stream has any tokens left.
+
+		Handles the acquiring of new tokens from the given token stream (file). 
 		"""
-		if len(self.line) > 0:
-			return True
+		if self.file == None: return False
+		if len(self.line) > 0: return True
 		else:
 			line = self.file.readline()
 			if line == '': #EOF
 				self.file.close()
+				self.file = None
 				return False
 			else:
 				self.line = self.tokenize(line)
@@ -47,7 +69,10 @@ class Tokenizer:
 
 		Returns a list of tokens.
 		"""
-		return [ (lambda tok: tok if tok.isupper() else tok.lower())(token) for token in re.split('[\s\.()\-"“!\*;,\'\?:]+', line.strip()) if not(len(token) == 0)] #or is_number(token)) ]
+		m = re.findall(token_re, line.strip())
+		if m == None:
+			return []
+		return [ (lambda tok: tok if tok.isupper() else tok.lower())(token) for token in m if not(len(token) == 0 or token in stopwords) ]
 
 	def next_token(self):
 		"""

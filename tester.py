@@ -3,11 +3,13 @@ from preprocessor import Preprocessor
 from tokenizer import Tokenizer
 from multinomial_naive_bayes import MultinomialNaiveBayes
 import numpy as np
-import os
 import getopt
 import sys
 
 def f_score(precision, recall, beta = 1):
+	"""
+	Returns the f-score (harmonic mean) of the given parameters.
+	"""
 	return ((beta ** 2 + 1) * precision * recall) / ((beta ** 2) * precision + recall)
 
 def div0(a, b):
@@ -44,13 +46,11 @@ def test_authors(p):
 
 			# Tokenize and add tokens to the bag of words
 			t = Tokenizer(p.file_path(author,data, training_data = False))
-			bagOfWords = []
-			while t.has_next():
-				bagOfWords.append(t.next_token())
+			bagOfWords = t.bag_of_words()
 
-			#TODO collect statistics 
 			class_predicted = bayes.most_probable_class(bagOfWords)
 			tester.add_stat(class_predicted, author)
+			#print('predicted:',class_predicted,'actual:',author)
 		
 	tester.print_scores()
 
@@ -65,16 +65,31 @@ class Tester:
 		self.stats[self.classes[real_class],self.classes[predicted_class]] += 1
 
 	def microavg_precision(self):
+		"""
+		Returns the micro-averaged precision value.
+		"""
 		return np.trace(self.stats) / np.sum(self.stats)
 
 	def microavg_recall(self):
+		"""
+		Returns the micro-averaged recall value.
+		"""
 		return np.trace(self.stats) / np.sum(self.stats)
 
 	def macroavg_precision(self):
+		"""
+		Returns the macro-averaged precision value.
+		Note that for any class precision that evaluates to 0 / 0, we substitute in 0,
+		for that means a complete lack of true and false positives,
+		which should be discouraged.
+		"""
 		return np.nanmean(div0(np.diagonal(self.stats), np.sum(self.stats, axis=0)))
 
 	def macroavg_recall(self):
-		return np.nanmean(div0(np.diagonal(self.stats), np.sum(self.stats, axis=1)))
+		"""
+		Returns the macro-averaged recall value.
+		"""
+		return np.nanmean(np.divide(np.diagonal(self.stats), np.sum(self.stats, axis=1)))
 
 	def print_scores(self):
 		micro_prec = self.microavg_precision()

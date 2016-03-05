@@ -17,13 +17,13 @@ class MultinomialNaiveBayes:
 		"""
 		self.class_data[class_name] = { 'num_documents' : 0, 'total_word_count': 0, 'words' : {} }
 
-	def add_document(self, class_name):
+	def add_document(self, class_name, amount = 1):
 		"""
 		Adds a document with the given class.
 		This method should be called for each document in the training set.
 		"""
-		self.total_documents += 1
-		self.class_data[class_name]['num_documents'] += 1
+		self.total_documents += amount
+		self.class_data[class_name]['num_documents'] += amount
 
 	def add_word(self, class_name, word):
 		"""
@@ -70,31 +70,18 @@ class MultinomialNaiveBayes:
 
 if __name__ == '__main__':
 	"""
-	Accepts two arguments, one mandatory (authors directory) and one optional
-	(seed for random number generation)
+	Performs the basic example from the lecture notes.
 	"""
-	if len(sys.argv) < 2:
-		print('Please enter the directory to load authors from.')
-	else:
-		seed = 1232
-		if len(sys.argv) > 2:
-			seed = sys.argv[2]
+	bayes = MultinomialNaiveBayes()
+	bayes.add_class('china')
+	bayes.add_class('japan')
+	china = 'Chinese Beijing Chinese Chinese Chinese Shanghai Chinese Macao'.split(' ')
+	japan = 'Tokyo Japan Chinese'.split(' ')
+	bayes.add_document('china', amount = 3)
+	bayes.add_document('japan', amount = 1)
+	for c in china:
+		bayes.add_word('china', c)
+	for j in japan:
+		bayes.add_word('japan', j)
 
-		p = Preprocessor(seed, sys.argv[1])
-		p.organize()
-		bayes = MultinomialNaiveBayes()
-		authors = p.get_authors()
-		for author in authors:
-			bayes.add_class(author)
-			for data in p.training_data(author):
-				bayes.add_document(author)
-				t = Tokenizer(p.file_path(author,data))
-				while t.has_next():
-					token = t.next_token()
-					bayes.add_word(author, token)
-
-		t = Tokenizer('69yazar/raw_texts__test/abbasGuclu/4.txt')
-		lis = []
-		while t.has_next():
-			lis.append(t.next_token())
-		print(bayes.most_probable_class(lis))
+	print(bayes.most_probable_class('Chinese Chinese Chinese Tokyo Japan'.split(' ')))
