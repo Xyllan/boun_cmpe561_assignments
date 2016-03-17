@@ -2,6 +2,7 @@
 import re
 import sys
 import csv
+import math
 
 stopwords = []
 with open('stopwords-tr.csv', 'r') as f:
@@ -18,46 +19,7 @@ def is_number(s):
 		except ValueError:
 			return False
 
-class Tokenizer:
-	""" Tokenizer for Turkish
-	There are two use cases:
-	1. Token stream through has_next() and next_token() methods.
-	2. List of all tokens through bag_of_words() method
-	"""
-	def __init__(self, path):
-		""" Initializes the tokenizer with the given text file path.
-		Note that the given files are assumed to be of Windows-1254 (Turkish)
-		encoding.
-		"""
-		self.file = open(path, 'r', encoding = 'cp1254')
-		self.tokens = {}
-		self.line = []
-
-	def bag_of_words(self):
-		""" Returns the bag of words representation of the file. """
-		lines = self.file.readlines()
-		self.file.close()
-		self.file = None
-		return [token for line in lines for token in self.tokenize(line)]
-
-	def has_next(self):
-		""" Returns True if the token stream has any tokens left.
-
-		Handles the acquiring of new tokens from the given token stream (file). 
-		"""
-		if self.file == None: return False
-		if len(self.line) > 0: return True
-		else:
-			line = self.file.readline()
-			if line == '': #EOF
-				self.file.close()
-				self.file = None
-				return False
-			else:
-				self.line = self.tokenize(line)
-				return self.has_next()
-
-	def tokenize(self, line):
+def tokenize(line):
 		""" Tokenizes the given line by splitting it from whitespaces and punctuations
 		that are commonly found at the end of sentences. Does not include
 		tokens of length 0. All tokens are transformed to lowercase unless the whole
@@ -69,6 +31,48 @@ class Tokenizer:
 		if m == None:
 			return []
 		return [ (lambda tok: tok if tok.isupper() else tok.lower())(token) for token in m if not(len(token) == 0 or token in stopwords) ]
+
+class Tokenizer:
+	""" Tokenizer for Turkish
+	There are two use cases:
+	1. Token stream through has_next() and next_token() methods.
+	2. List of all tokens through bag_of_words() method
+	"""
+	def __init__(self, path = None):
+		""" Initializes the tokenizer with the given text file path.
+		Note that the given files are assumed to be of Windows-1254 (Turkish)
+		encoding.
+		"""
+		if not path == None:
+			file = open(path, 'r', encoding = 'cp1254')
+			lines = file.readlines()
+			file.close()
+			joined = " ".join(lines)
+			self.sentences = [sentence.strip() for sentence in re.split("(?:(?<=\d)\.(?!\d))|(?:(?<!\d)\.(?=\d))|(?:(?<!\d)\.(?!\d))|\.\.+|[!?:]+",joined) if not sentence.strip() == '']
+		else:
+			self.sentences = []
+		self.tokens = {}
+		self.line = []
+
+	def append_sentences(self, sentences):
+		""" Appends sentences to already existing sentences. """
+		self.sentences.extend(sentences)
+
+	def bag_of_words(self):
+		""" Returns the bag of words representation of the file. """
+		return [token for sentence in self.sentences for token in tokenize(sentence)]
+
+	def has_next(self):
+		""" Returns True if the token stream has any tokens left.
+
+		Handles the acquiring of new tokens from the given token stream (file). 
+		"""
+		if len(self.line) > 0: return True
+		if len(self.sentences) == 0: return False
+		else:
+			line = self.sentences.pop(0)
+			self.line = tokenize(line)
+			return self.has_next()
 
 	def next_token(self):
 		""" Returns the next token in the token stream. """

@@ -21,22 +21,24 @@ def div0(a, b):
 		c[ ~np.isfinite(c)] = 0  # -inf inf NaN
 	return c
 
+
 def test_authors(p):
-	bayes = MultinomialNaiveBayes()
 	authors = p.get_authors()
+	bayes = MultinomialNaiveBayes(authors)
 		
 	# Train the bayes classifier for each training data
 	for author in authors:
-		bayes.add_class(author)
+		bayes.add_documents(author, len(p.training_data(author)))
+		bagOfWords = []
 		for data in p.training_data(author):
-			bayes.add_document(author)
 
 			# Tokenize and add tokens to the bag of words
 			t = Tokenizer(p.file_path(author,data))
-			while t.has_next():
-				bayes.add_word(author, t.next_token())
+			bagOfWords.extend(t.bag_of_words())
+			for token in bagOfWords:
+				bayes.add_word(author, token)
 
-	tester = Tester(authors)
+	tester = Tester(bayes.get_classes())
 	# Check the bayes classifier for each 
 	for author in authors:
 		for data in p.test_data(author):
@@ -45,7 +47,7 @@ def test_authors(p):
 			t = Tokenizer(p.file_path(author,data, training_data = False))
 			bagOfWords = t.bag_of_words()
 
-			class_predicted = bayes.most_probable_class(bagOfWords)
+			class_predicted = bayes.most_probable_class(bagOfWords, alpha = 0.4)
 			tester.add_stat(class_predicted, author)
 			#print('predicted:',class_predicted,'actual:',author)
 		
@@ -54,8 +56,7 @@ def test_authors(p):
 class Tester:
 	def __init__(self, classes):
 		cls_len = len(classes)
-		index = 0
-		self.classes = dict(zip(classes, range(0, cls_len)))
+		self.classes = classes
 		self.stats = np.zeros((cls_len, cls_len), dtype=np.int)
 
 	def add_stat(self, predicted_class, real_class):
@@ -137,4 +138,4 @@ if __name__ == '__main__':
 		else:
 			p.organize_authors(argv[0], argv[1])
 
-	test_authors(p)
+	test_authors2(p)
