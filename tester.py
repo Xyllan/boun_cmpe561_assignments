@@ -26,6 +26,7 @@ def print_multiple_scores(scores):
 		if scores[i] is not None:
 			print('Scores for the',names[i],'feature set:')
 			print_scores(scores[i])
+			print('\n')
 
 def test_authors(p, bag_of_words = True, alpha = 0.05, bag_of_char_ngrams = False, ngram_len = 5, set_of_words = False, complexity_features = False,
 	print_predictions = True):
@@ -182,6 +183,6 @@ if __name__ == '__main__':
 			sys.exit(2)
 		else:
 			p.organize_authors(argv[0], argv[1])
-
-	scores = test_authors(p, bag_of_words = True, alpha = 0.05, bag_of_char_ngrams = False, ngram_len = 5, set_of_words = True, complexity_features = False)
-	print_multiple_scores(scores)
+	with np.errstate(divide='ignore', invalid='ignore'):	
+		scores = test_authors(p, bag_of_words = True, alpha = 0.05, bag_of_char_ngrams = True, ngram_len = 5, set_of_words = False, complexity_features = False)
+		print_multiple_scores(scores)

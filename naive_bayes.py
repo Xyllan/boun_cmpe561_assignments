@@ -116,9 +116,9 @@ class BinarizedMultinomialNaiveBayes(MultinomialNaiveBayes):
 
 		Parameter features is a dictionary of features to feature counts. Since this
 		implementation is binarized, the counts are set to 1 if they are non-zero.
-		"""
+		"""															
 		v = MultinomialNaiveBayes.vectorize(self,features)
-		return np.minimum(np.ones(len(v)),v)
+		return np.minimum(np.ones(len(v),dtype=np.int),v)
 
 class NormalizingNaiveBayes(NaiveBayes):
 	""" A Naive Bayes implementation that tries to fit features into normal distributions.
