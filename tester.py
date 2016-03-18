@@ -184,5 +184,6 @@ if __name__ == '__main__':
 		else:
 			p.organize_authors(argv[0], argv[1])
 	with np.errstate(divide='ignore', invalid='ignore'):	
-		scores = test_authors(p, bag_of_words = True, alpha = 0.05, bag_of_char_ngrams = True, ngram_len = 5, set_of_words = False, complexity_features = False)
+		scores = test_authors(p, bag_of_words = True, alpha = 0.05, bag_of_char_ngrams = True, ngram_len = 5,
+			set_of_words = False, complexity_features = False, print_predictions = False)
 		print_multiple_scores(scores)
