@@ -4,6 +4,7 @@ import os
 import random
 import sys
 import shutil
+import getopt
 
 class Preprocessor:
 	def __init__(self):
@@ -11,7 +12,7 @@ class Preprocessor:
 		self.test_path = ''
 		self.authors = {}
 
-	def organize_dataset(self, seed, path, ratio = 0.6):
+	def organize_dataset(self, seed, path, ratio = 0.6, training_path = None, test_path = None):
 		""" Generates training and test datasets for each author.
 		The training and test datasets are copied to the new directories.
 		The texts belonging to authors are shuffled with Fisher-Yates shuffle
@@ -27,8 +28,8 @@ class Preprocessor:
 		if seed is not None:
 			random.seed(seed)
 		path = os.path.normpath(path)
-		self.training_path = path + '__training'
-		self.test_path = path + '__test'
+		self.training_path = path + '__training' if training_path is None else os.path.normpath(training_path)
+		self.test_path = path + '__test' if test_path is None else os.path.normpath(test_path)
 		self.init_dirs(self.training_path, self.test_path)
 		authors = os.listdir(path)
 		for author in authors:
@@ -94,16 +95,39 @@ class Preprocessor:
 			return os.path.join(self.test_path, author, file_name)
 
 if __name__ == '__main__':
-	""" Accepts two arguments, one mandatory (authors directory) and one optional
-	(seed for random number generation)
+	""" This program normally accepts three arguments: the directory of the initial dataset, the 
+	desired directory of the training set and the desired directory of the test set.
+	If used, the -s option followed by a number can also be used to set the random seed
+	for test data shuffling. If only one directory path is given, it is assumed to be of the
+	dataset and training and test folders will be generated automatically.
 	"""
-	if len(sys.argv) < 2:
-		print('Please enter the directory to load authors from.')
-	else:
-		seed = None
-		if len(sys.argv) > 2:
-			seed = sys.argv[2]
+	seed = None
+	argv = []
+	p = Preprocessor()
+	try:
+		optlist, argv = getopt.getopt(sys.argv[1:], 's:', ["seed="])
+	except getopt.GetoptError as err:
+		# print help information and exit:
+		print(err) # will print something like "option -a not recognized"
+		usage()
+		sys.exit(2)
+	for o, a in optlist:
+		if o in ("-s","--seed"):
+			seed = a
+		else:
+			assert False, "unhandled option"
 
+	if len(argv) < 1:
+		print('Please enter at least the directory of the dataset')
+	elif len(argv) < 3:
 		p = Preprocessor()
-		p.organize_dataset(seed, sys.argv[1])
+		tra, tes = p.organize_dataset(seed, argv[0])
 		p.organize_authors()
+		print('Training directory path:',tra)
+		print('Test directory path:',tes)
+	else:
+		p = Preprocessor()
+		tra, tes = p.organize_dataset(seed, argv[0], training_path = argv[1], test_path = argv[2])
+		p.organize_authors()
+		print('Training directory path:',tra)
+		print('Test directory path:',tes)

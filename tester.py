@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from preprocessor import Preprocessor
 from tokenizer import Tokenizer
-from multinomial_naive_bayes import MultinomialNaiveBayes
+from naive_bayes import MultinomialNaiveBayes, BinarizedMultinomialNaiveBayes, NormalizingNaiveBayes
 import numpy as np
 import getopt
 import sys
@@ -10,56 +10,107 @@ def f_score(precision, recall, beta = 1):
 	""" Returns the f-score (harmonic mean) of the given parameters. """
 	return ((beta ** 2 + 1) * precision * recall) / ((beta ** 2) * precision + recall)
 
-def div0(a, b):
-	""" Elementwise divide two numpy arrays, with divide by zero equaling 0.
-	div0( [-1, 0, 1], 0 ) would therefore return [0, 0, 0]
-	This is done avoid high precision values for the case where 
-	a class is not marked with neither false nor true positive.
+def print_scores(scores):
+		print('Micro-averaged scores:')
+		print('Precision:',scores[0])
+		print('Recall:', scores[1])
+		print('F-score (beta=1):', scores[2])
+		print('Macro-averaged scores:')
+		print('Precision:',scores[3])
+		print('Recall:', scores[4])
+		print('F-score (beta=1):', scores[5])
+
+def print_multiple_scores(scores):
+	names = ['Bag of Words', 'Bag of Character N-Grams', 'Set of Words', 'Complexity Features']
+	for i in range(len(scores)):
+		if scores[i] is not None:
+			print('Scores for the',names[i],'feature set:')
+			print_scores(scores[i])
+
+def test_authors(p, bag_of_words = True, alpha = 0.05, bag_of_char_ngrams = False, ngram_len = 5, set_of_words = False, complexity_features = False,
+	print_predictions = True):
+	""" Tests the classifiers with the given feature sets.
+
+	p is the Preprocessor object holding the path data. It must have been initialized by
+	calling p.organize_authors()
+
+	If bag_of_words argument is True, the program uses Multinomial Naive Bayes classifier
+	with the given alpha and bag of words as the feature set.
+
+	If bag_of_char_ngrams argument is True, the program uses Multinomial Naive Bayes classifier
+	with the given alpha, and a bag of character n-grams as the feature set.
+
+	If set_of_words argument is True, the program uses Binarized Multinomial Naive Bayes clasifier
+	with the given alpha, and a set of words as the feature set.
+
+	If complexity_features argument is True, the program uses Normalizing Naive Bayes, which
+	is my term for a classifier which simply fits all features for all classes into their own normal
+	distributions and calculates probabilities using the pdfs.
+
+	Returns a 4-tuple, each being the score tuple a different feature set, in the order they are written
+	above. Any feature sets not used will return a score of None.
 	"""
-	with np.errstate(divide='ignore', invalid='ignore'):
-		c = np.true_divide(a, b)
-		c[ ~np.isfinite(c)] = 0  # -inf inf NaN
-	return c
-
-
-def test_authors(p):
 	authors = p.get_authors()
-	bayes = MultinomialNaiveBayes(authors)
-		
-	# Train the bayes classifier for each training data
+	classifiers = (None if not bag_of_words else MultinomialNaiveBayes(authors, alpha = alpha),
+		None if not bag_of_char_ngrams else MultinomialNaiveBayes(authors, alpha = alpha),
+		None if not set_of_words else BinarizedMultinomialNaiveBayes(authors, alpha = alpha),
+		None if not complexity_features else NormalizingNaiveBayes(authors, 8))
+
+	# Train the bayes classifiers for each training data
 	for author in authors:
-		bayes.add_documents(author, len(p.training_data(author)))
-		bagOfWords = []
+		for clsf in classifiers:
+			if clsf is not None: clsf.add_documents(author, len(p.training_data(author)))
+
 		for data in p.training_data(author):
 
-			# Tokenize and add tokens to the bag of words
+			# Featurize and add features to the classifiers
 			t = Tokenizer(p.file_path(author,data))
-			bagOfWords.extend(t.bag_of_words())
-			for token in bagOfWords:
-				bayes.add_word(author, token)
+			if classifiers[0] is not None: classifiers[0].add_feature_counts(author, t.bag_of_words())
+			if classifiers[1] is not None: classifiers[1].add_feature_counts(author, t.bag_of_char_ngrams(ngram_len))
+			if classifiers[2] is not None: classifiers[2].add_feature_counts(author, t.bag_of_words())
+			if classifiers[3] is not None: classifiers[3].add_features(author, classifiers[3].vectorize(t.features()))
 
-	tester = Tester(bayes.get_classes())
-	# Check the bayes classifier for each 
+	for clsf in classifiers:
+		if clsf is not None: clsf.train()
+
+	testers = (None if not bag_of_words else Tester(classifiers[0].get_classes()),
+		None if not bag_of_char_ngrams else Tester(classifiers[1].get_classes()),
+		None if not set_of_words else Tester(classifiers[2].get_classes()),
+		None if not complexity_features else Tester(classifiers[3].get_classes()))
+
+	# Check the classifier predictions for each test data
 	for author in authors:
 		for data in p.test_data(author):
 
-			# Tokenize and add tokens to the bag of words
+			# Featurize and classify
 			t = Tokenizer(p.file_path(author,data, training_data = False))
-			bagOfWords = t.bag_of_words()
-
-			class_predicted = bayes.most_probable_class(bagOfWords, alpha = 0.4)
-			tester.add_stat(class_predicted, author)
-			#print('predicted:',class_predicted,'actual:',author)
+			class_predicted = [None, None, None, None]
+			if classifiers[0] is not None:
+				class_predicted[0] = classifiers[0].most_probable_class(classifiers[0].vectorize(t.bag_of_words()))
+				testers[0].add_stat(class_predicted[0], author)
+			if classifiers[1] is not None:
+				class_predicted[1] = classifiers[1].most_probable_class(classifiers[1].vectorize(t.bag_of_char_ngrams(ngram_len)))
+				testers[1].add_stat(class_predicted[1], author)
+			if classifiers[2] is not None:
+				class_predicted[2] = classifiers[2].most_probable_class(classifiers[2].vectorize(t.bag_of_words()))
+				testers[2].add_stat(class_predicted[2], author)
+			if classifiers[3] is not None:
+				class_predicted[3] = classifiers[3].most_probable_class(classifiers[3].vectorize(t.features()))
+				testers[3].add_stat(class_predicted[3], author)
+			if print_predictions: print('predicted:',[pr for pr in class_predicted if pr is not None],'actual:',author)
 		
-	tester.print_scores()
+	return (testers[0].scores() if testers[0] is not None else None, testers[1].scores() if testers[1] is not None else None,
+		testers[2].scores() if testers[2] is not None else None, testers[3].scores() if testers[3] is not None else None)
 
 class Tester:
+	""" Tester for a single Naive Bayes classifier. """
 	def __init__(self, classes):
 		cls_len = len(classes)
 		self.classes = classes
 		self.stats = np.zeros((cls_len, cls_len), dtype=np.int)
 
 	def add_stat(self, predicted_class, real_class):
+		""" Adds a single stat to the confusion matrix. """
 		self.stats[self.classes[real_class],self.classes[predicted_class]] += 1
 
 	def microavg_precision(self):
@@ -72,31 +123,25 @@ class Tester:
 
 	def macroavg_precision(self):
 		""" Returns the macro-averaged precision value.
-		Note that for any class precision that evaluates to 0 / 0, we substitute in 0,
-		for that means a complete lack of true and false positives,
-		which should be discouraged.
+		Note that nan values are ignored.
 		"""
-		return np.nanmean(div0(np.diagonal(self.stats), np.sum(self.stats, axis=0)))
+		with np.errstate(divide='ignore', invalid='ignore'):
+			return np.nanmean(np.divide(np.diagonal(self.stats), np.sum(self.stats, axis=0)))
 
 	def macroavg_recall(self):
 		""" Returns the macro-averaged recall value. """
-		return np.nanmean(np.divide(np.diagonal(self.stats), np.sum(self.stats, axis=1)))
+		with np.errstate(divide='ignore', invalid='ignore'):
+			return np.nanmean(np.divide(np.diagonal(self.stats), np.sum(self.stats, axis=1)))
 
-	def print_scores(self):
+	def scores(self):
+		""" Returns a 6-tuple of scores. """
 		micro_prec = self.microavg_precision()
 		micro_rec = self.microavg_recall()
 		micro_f = f_score(micro_prec, micro_rec)
 		macro_prec = self.macroavg_precision()
 		macro_rec = self.macroavg_recall()
 		macro_f = f_score(macro_prec, macro_rec)
-		print('Micro-averaged scores:')
-		print('Precision:',micro_prec)
-		print('Recall:', micro_rec)
-		print('F-score (beta=1):', micro_f)
-		print('Macro-averaged scores:')
-		print('Precision:',macro_prec)
-		print('Recall:', macro_rec)
-		print('F-score (beta=1):', macro_f)
+		return micro_prec, micro_rec, micro_f, macro_prec, macro_rec, macro_f
 
 if __name__ == '__main__':
 	""" This program normally accepts two arguments: the directory of the training set and
@@ -138,4 +183,5 @@ if __name__ == '__main__':
 		else:
 			p.organize_authors(argv[0], argv[1])
 
-	test_authors2(p)
+	scores = test_authors(p, bag_of_words = True, alpha = 0.05, bag_of_char_ngrams = False, ngram_len = 5, set_of_words = True, complexity_features = False)
+	print_multiple_scores(scores)
