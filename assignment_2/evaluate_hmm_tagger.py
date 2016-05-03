@@ -35,18 +35,18 @@ class Tester:
 		self.unk_stats = np.zeros((tag_len, tag_len), dtype=np.int)
 		self.knw_stats = np.zeros((tag_len, tag_len), dtype=np.int)
 
-	def build(self, gold_sentences, predicted_sentences, vocab = set([])):
+	def build(self, gold_sentences, predicted_sentences, tag_ind, vocab = set([])):
 		""" Builds the confusion matrix.
 		The given predicted sentences and the gold standard sentences
 		must be of the same length. The total number of sentences must
 		also match.
 		""" 
-		for i, gold_sent in enumerate(sentences):
+		for i, gold_sent in enumerate(gold_sentences):
 			pr_sent = predicted_sentences[i]
 			for j, gold_word in enumerate(gold_sent):
 				pr_word = pr_sent[j]
 				known = pr_word[0] in vocab
-				self.add_stat(pr_word[hmm.tag_ind],gold_word[hmm.tag_ind], known = known)
+				self.add_stat(pr_word[tag_ind],gold_word[tag_ind], known = known)
 	
 	def get_stats(self, stat_type = 2):
 		""" Gets the stat matrix of the relevant type.
@@ -117,7 +117,7 @@ if __name__ == '__main__':
 		pr_sentences = get_pred_sentences(output_filepath)
 
 		t = Tester(hmm.tags)
-		t.build(sentences,pr_sentences, vocab = hmm.vocab)
+		t.build(sentences, pr_sentences, hmm.tag_ind, vocab = hmm.vocab)
 		
 		print('Stats for unknown words:')
 		t.print_acc(0)
