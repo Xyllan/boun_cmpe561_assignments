@@ -21,7 +21,7 @@ def to_dict(obj, count):
 	(str,str)
 	If the given object refers to a tag/prev-tag pair, it will be of the form:
 	(str,str)
-	If the given object refefrs to a tag, it will be of the form:
+	If the given object refers to a tag, it will be of the form:
 	str
 	"""
 	if is_sequence(obj): # Count of a tag/word or tag/prev-tag pair
@@ -47,6 +47,7 @@ class HMM:
 		self.tags = tags
 		self.tag_ind = tag_ind
 		self.counts = {}
+		self.vocab = set([])
 
 	def add_count(self, obj, amount = 1):
 		""" Adds an amount to the given count object. """
@@ -89,6 +90,7 @@ class HMM:
 		('word','tag_name')
 		"""
 		self.add_count((word,tag), amount)
+		self.vocab.add(word)
 
 	def word_tag_count(self, word, tag):
 		""" Convenience method for getting a tag word count. """
@@ -120,6 +122,7 @@ class HMM:
 		""" Saves the current state of the HMM to a file. """
 		with io.open(path, 'w', encoding='utf-8') as f:
 			data = {'tags':list(self.tags),
+					'vocab':list(self.vocab),
 					'tag_ind':self.tag_ind,
 					'counts':[to_dict(obj,count) for obj,count in self.counts.items()]
 					}
@@ -131,6 +134,7 @@ class HMM:
 		with io.open(path, 'r', encoding = 'utf-8') as f:
 			data = json.load(f)
 			self.tags = set(data['tags'])
+			self.vocab = set(data['vocab'])
 			self.tag_ind = data['tag_ind']
 			self.counts = dict([from_dict(c) for c in data['counts']])
 		print('HMM configuration loaded from',path)

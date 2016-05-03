@@ -32,9 +32,10 @@ class Tester:
 	def __init__(self, tags):
 		tag_len = len(tags)
 		self.tags = OrderedDict(zip(tags, range(0, len(tags))))
-		self.stats = np.zeros((tag_len, tag_len), dtype=np.int)
+		self.unk_stats = np.zeros((tag_len, tag_len), dtype=np.int)
+		self.knw_stats = np.zeros((tag_len, tag_len), dtype=np.int)
 
-	def build(self, gold_sentences, predicted_sentences):
+	def build(self, gold_sentences, predicted_sentences, vocab = set([])):
 		""" Builds the confusion matrix.
 		The given predicted sentences and the gold standard sentences
 		must be of the same length. The total number of sentences must
@@ -44,34 +45,57 @@ class Tester:
 			pr_sent = predicted_sentences[i]
 			for j, gold_word in enumerate(gold_sent):
 				pr_word = pr_sent[j]
-				t.add_stat(pr_word[hmm.tag_ind],gold_word[hmm.tag_ind])
+				known = pr_word[0] in vocab
+				self.add_stat(pr_word[hmm.tag_ind],gold_word[hmm.tag_ind], known = known)
 	
-	def add_stat(self, predicted_tag, real_tag):
+	def get_stats(self, stat_type = 2):
+		""" Gets the stat matrix of the relevant type.
+		Stat Type 0: Unknown words only
+		Stat Type 1: Known words only
+		Stat Type 2: All words
+		"""
+		if stat_type is 0:
+			return self.unk_stats
+		elif stat_type is 1:
+			return self.knw_stats
+		else:
+			return self.unk_stats + self.knw_stats
+
+	def add_stat(self, predicted_tag, real_tag, known = True):
 		""" Adds a single stat to the confusion matrix. """
-		self.stats[self.tags[real_tag],self.tags[predicted_tag]] += 1
+		if known:
+			self.knw_stats[self.tags[real_tag],self.tags[predicted_tag]] += 1
+		else:
+			self.unk_stats[self.tags[real_tag],self.tags[predicted_tag]] += 1
 
-	def accuracy(self, tag):
-		""" Calculates the accuracy of a single tag. """
+	def accuracy(self, tag, stat_type = 2):
+		""" Calculates the accuracy of a single tag.
+		See get_stats function for information on stat_type 
+		"""
 		ind = self.tags[tag]
-		s = np.sum(self.stats)
-		return (s - np.sum(self.stats[ind,:]) - np.sum(self.stats[:,ind]) + 2 * self.stats[ind,ind]) / s
+		stats = self.get_stats(stat_type)
+		s = np.sum(stats)
+		return (s - np.sum(stats[ind,:]) - np.sum(stats[:,ind]) + 2 * stats[ind,ind]) / s
 
-	def overall_accuracy(self):
-		""" Calculates the overall accuracy. """
-		return np.trace(self.stats) / np.sum(self.stats)
+	def overall_accuracy(self, stat_type = 2):
+		""" Calculates the overall accuracy.
+		See get_stats function for information on stat_type 
+		"""
+		stats = self.get_stats(stat_type)
+		return np.trace(stats) / np.sum(stats)
 
-	def print_acc(self):
+	def print_acc(self, stat_type = 2):
 		""" Prints the accuracies of all tags, plus the overall accuracy. """
 		print('Accuracies:')
-		print('Overall Accuracy:',self.overall_accuracy())
+		print('Overall Accuracy:',self.overall_accuracy(stat_type))
 		for tag in self.tags.keys():
-			print(tag,'Accuracy:',self.accuracy(tag))
+			print(tag,'Accuracy:',self.accuracy(tag, stat_type))
 
-	def print_conf(self):
+	def print_conf(self, stat_type = 2):
 		""" Prints the confusion matrix. """
 		print('Confusion matrix:')
 		print('  Tags:',list(self.tags.keys()))
-		print(self.stats)
+		print(self.get_stats(stat_type))
 
 if __name__ == '__main__':
 	""" This program accepts two arguments: the file path to generated output
@@ -93,7 +117,14 @@ if __name__ == '__main__':
 		pr_sentences = get_pred_sentences(output_filepath)
 
 		t = Tester(hmm.tags)
-		t.build(sentences,pr_sentences)
+		t.build(sentences,pr_sentences, vocab = hmm.vocab)
 		
-		t.print_acc()
-		t.print_conf()
+		print('Stats for unknown words:')
+		t.print_acc(0)
+		t.print_conf(0)
+		print('Stats for known words:')
+		t.print_acc(1)
+		t.print_conf(1)
+		print('Stats for all words:')
+		t.print_acc(2)
+		t.print_conf(2)

@@ -24,4 +24,4 @@ To evaluate the results of the above program with the gold standard, use the `ev
 
     ./evaluate_hmm_tagger.py path/to/output/file.txt path/to/gold/standard.conll
 This will output the accuracies for all of the tags, plus the overall accuracy. It will also print the list of tags and the resulting confusion matrix. Note that the second argument must be of the CoNLL format.
-You can read the [report](Report.ipynb) on how the other feature sets perform.
+You can read the [report](Report.ipynb) for the results.
