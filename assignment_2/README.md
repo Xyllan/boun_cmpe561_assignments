@@ -2,7 +2,7 @@
 ## Assignment 2
 HMM POS Tagger.
 
-The usages for each little program can be found in their own comments. The metu_sabanci_cmpe_561 folder is not necessary for running the codes, but it is necessary to run the codes in the Jupyter Notebook report. Simply extract and place it in this folder.
+The usages for each little program can be found in their own comments. The metu_sabanci_cmpe_561 folder is not necessary for running the codes, but it is necessary to run the codes in the Jupyter Notebook report. Simply extract and place it in this folder. If unavailable, the codes can be run with any CoNLL file, simply modify the input paths in the report.
 
 The CoNLL Parser parses the given CoNLL file into sentences, each a list of word tuples. There is limited use case for this program outside the methods it provides, but if need be, it can return a list of cpostags using
 

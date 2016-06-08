@@ -2,6 +2,8 @@
 ## Assignment 1
 Naive Bayes classifier for Turkish texts.
 
+Download and extract the *69 Authors* dataset from [here](http://www.kemik.yildiz.edu.tr/?id=28), which was the primary dataset for this assignment.
+
 The usages for each class can be found in the comments. In general, you should only need to run the Preprocessor and the Tester.
 If need be, you can use the provided classes, such as Tokenizer and Naive Bayes implementations.
 
